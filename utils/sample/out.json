@@ -1,0 +1,80 @@
+{
+    "short_memo": "short memo",
+    "cur_work_server": 5,
+    "default_prefix": "/data1/sdi/CPNKDv4-result",
+    "current_time": "Jul19_17-11-33_demo",
+    "data_root": "/data1/sdi/datasets",
+    "login_dir": "/data1/sdi/login.json",
+    "Tlog_dir": "/data1/sdi/CPNKDv4-result/Jul19_17-11-33_demo/log",
+    "save_model": false,
+    "best_ckpt": "/data1/sdi/CPNKDv4-result/Jul19_17-11-33_demo/cache-param",
+    "resume_ckpt": "/",
+    "continue_training": false,
+    "t_model": "deeplabv3plus_resnet50",
+    "s_model": "deeplabv3plus_resnet50",
+    "t_model_params": "/",
+    "separable_conv": false,
+    "output_stride": 16,
+    "t_separable_conv": false,
+    "t_output_stride": 16,
+    "s_dataset": "cpn",
+    "t_dataset": "median",
+    "s_dataset_ver": "splits/v5/3",
+    "t_dataset_ver": "splits",
+    "num_classes": 2,
+    "num_workers": 8,
+    "is_rgb": true,
+    "tvs": 5,
+    "resize": [
+        496,
+        468
+    ],
+    "resize_val": [
+        496,
+        468
+    ],
+    "resize_test": [
+        496,
+        468
+    ],
+    "crop_size": [
+        512,
+        448
+    ],
+    "crop_size_val": [
+        512,
+        448
+    ],
+    "crop_size_test": [
+        512,
+        448
+    ],
+    "scale_factor": 0.5,
+    "scale_factor_val": 0.5,
+    "scale_factor_test": 0.5,
+    "std": 0.0,
+    "std_val": 0.0,
+    "std_test": 0.0,
+    "random_seed": 1,
+    "total_itrs": 2500,
+    "lr_policy": "step",
+    "lr": 0.1,
+    "step_size": 100,
+    "weight_decay": 0.0005,
+    "momentum": 0.9,
+    "optim": "SGD",
+    "loss_type": "dice_loss",
+    "batch_size": 16,
+    "exp_itr": 2,
+    "alpha": 0.5,
+    "T": 3,
+    "val_interval": 1,
+    "val_batch_size": 4,
+    "patience": 100,
+    "delta": 0.001,
+    "test_interval": 1,
+    "test_batch_size": 4,
+    "save_test_results": false,
+    "test_results_dir": "/",
+    "run_demo": true
+}
