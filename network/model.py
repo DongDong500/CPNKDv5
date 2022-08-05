@@ -1,114 +1,58 @@
-import torch
-from .unet import UNet
-from .unet_gray import UNet_gray
-from .modeling.deeplab import *
-from .backbone import resnet
-from .utils import IntermediateLayerGetter
-from ._deeplab import DeepLabHead, DeepLabHeadV3Plus, DeepLabV3
+import segmentation_models_pytorch as SMP
 
-def _segm_hrnet(name, backbone_name, num_classes, pretrained_backbone):
-
-    raise NotImplementedError
-
-def _segm_mobilenet(name, backbone_name, num_classes, output_stride, pretrained_backbone):
-    
-    raise NotImplementedError
-
-def _segm_resnet(name, backbone_name, num_classes, output_stride, pretrained_backbone):
-
-    if output_stride==8:
-        replace_stride_with_dilation=[False, True, True]
-        aspp_dilate = [12, 24, 36]
-    else:
-        replace_stride_with_dilation=[False, False, True]
-        aspp_dilate = [6, 12, 18]
-
-    backbone = resnet.__dict__[backbone_name](
-        pretrained=pretrained_backbone,
-        replace_stride_with_dilation=replace_stride_with_dilation)
-    
-    inplanes = 2048
-    low_level_planes = 256
-
-    if name=='deeplabv3plus':
-        return_layers = {'layer4': 'out', 'layer1': 'low_level'}
-        classifier = DeepLabHeadV3Plus(inplanes, low_level_planes, num_classes, aspp_dilate)
-    elif name=='deeplabv3':
-        return_layers = {'layer4': 'out'}
-        classifier = DeepLabHead(inplanes , num_classes, aspp_dilate)
-    backbone = IntermediateLayerGetter(backbone, return_layers=return_layers)
-
-    model = DeepLabV3(backbone, classifier)
-    return model
-
-def _load_model(arch_type, backbone, num_classes, output_stride, pretrained_backbone):
-
-    if backbone=='mobilenetv2':
-        model = _segm_mobilenet(arch_type, backbone, num_classes, output_stride=output_stride, pretrained_backbone=pretrained_backbone)
-    elif backbone.startswith('resnet'):
-        model = _segm_resnet(arch_type, backbone, num_classes, output_stride=output_stride, pretrained_backbone=pretrained_backbone)
-    elif backbone.startswith('hrnetv2'):
-        model = _segm_hrnet(arch_type, backbone, num_classes, pretrained_backbone=pretrained_backbone)
-    else:
-        raise NotImplementedError
-    return model
-
-def unet_rgb(channel=3, num_classes=2):
-    print('UNet RGB - Channel: {} Classes: {}'.format(channel, num_classes))
-    return UNet(n_channels=channel, n_classes=num_classes)
-
-def unet_gray(channel=1, num_classes=2):
-    print('UNet GRAY - Channel: {} Classes: {}'.format(channel, num_classes))
-    return UNet_gray(n_channels=channel, n_classes=num_classes)
-
-# Not Implemented Error
-def unet_pt(channel=1, num_classes=2):
-    print('UNet Pretrained - Channel: {} Classes: {}'.format(channel, num_classes))
-    return torch.hub.load('mateuszbuda/brain-segmentation-pytorch', 'unet',
-                    in_channels=1, out_channels=2, init_features=32, pretrained=True)
-
-def deeplab(channel=1, num_classes=2):
-    print('DeepLab - Channel: {} Classes: {}'.format(channel, num_classes))
-    return DeepLab(num_classes=num_classes, backbone='resnet', output_stride=16,
-                    sync_bn=True, freeze_bn=False)
-
-def deeplabv3_resnet50(channel=1, num_classes=2, output_stride=8, pretrained_backbone=True):
-    """Constructs a DeepLabV3 model with a ResNet-50 backbone.
+def deeplabv3plus_resnet50(encoder_name, encoder_depth, encoder_weights, encoder_output_stride, 
+                            decoder_channels, decoder_atrous_rates, in_channels, classes, 
+                            activation, upsampling, aux_params, **kwargs):
+    """Constructs a DeepLabV3+ model with a ResNet-50 backbone.
 
     Args:
-        num_classes (int): number of classes.
-        output_stride (int): output stride for deeplab.
-        pretrained_backbone (bool): If True, use the pretrained backbone.
+        in_channels (int):  A number of input channels for the model, default is 3 (RGB images)
+        classes (int):      A number of classes for output mask 
+                            (or you can think as a number of channels of output mask)
+        encoder_name (str): Name of the classification model that will be used as an encoder (a.k.a
+                            backbone) to extract features of different spatial resolution
+        encoder_depth (int): A number of stages used in encoder in range [3, 5].
+                            Each stage generate features two times smaller in spatial dimentions than previous one 
+                            (e.g. for depth 0 we will have features with shapes [(N, C, H, W),], 
+                            for depth 1 - [(N, C, H, W), (N, C, H // 2, W // 2)] and so on). (Default is 5)
+        encoder_weights (str): One of None (random initialization), “imagenet” (pre-training on ImageNet) 
+                            and other pretrained weights (see table with available weights for each encoder_name)
+        encoder_output_stride (int): Downsampling factor for last encoder features (see original paper for explanation)
+        decoder_atrous_rates (tuple): Dilation rates for ASPP module (should be a tuple of 3 integer values)
+        decoder_channels (int): A number of convolution filters in ASPP module. Default is 256
+        activation (str):   An activation function to apply after the final convolution layer. Avaliable
+                            options are “sigmoid”, “softmax”, “logsoftmax”, “identity”, callable and None. 
+                            (Default is None)
+        upsampling (int):   Final upsampling factor. Default is 4 to preserve input-output spatial shape identity
+        aux_params (dict):  Dictionary with parameters of the auxiliary output (classification head).
+                            Auxiliary output is build on top of encoder if aux_params is not None (default). Supported
+                                params:
+                                - classes (int): A number of classes
+                                - pooling (str): One of “max”, “avg”. Default is “avg”
+                                - dropout (float): Dropout factor in [0, 1)
+                                - activation (str): An activation function to apply “sigmoid”/”softmax” 
+                                (could be None to return logits)
     """
-    return _load_model('deeplabv3', 'resnet50', num_classes, output_stride=output_stride, pretrained_backbone=pretrained_backbone)
+    return SMP.DeepLabV3Plus(encoder_name='resnet50', encoder_depth=encoder_depth, encoder_weights=encoder_weights, encoder_output_stride=encoder_output_stride, 
+                                decoder_channels=decoder_channels, decoder_atrous_rates=decoder_atrous_rates, in_channels=in_channels, classes=classes, 
+                                activation=activation, upsampling=upsampling, aux_params=aux_params)
 
-def deeplabv3_resnet101(channel=1, num_classes=21, output_stride=8, pretrained_backbone=True):
-    """Constructs a DeepLabV3 model with a ResNet-101 backbone.
+def deeplabv3plus_resnet101(encoder_name, encoder_depth, encoder_weights, encoder_output_stride, 
+                            decoder_channels, decoder_atrous_rates, in_channels, classes, 
+                            activation, upsampling, aux_params, **kwargs):
 
-    Args:
-        num_classes (int): number of classes.
-        output_stride (int): output stride for deeplab.
-        pretrained_backbone (bool): If True, use the pretrained backbone.
-    """
-    return _load_model('deeplabv3', 'resnet101', num_classes, output_stride=output_stride, pretrained_backbone=pretrained_backbone)
-
-def deeplabv3plus_resnet50(channel=1, num_classes=21, output_stride=8, pretrained_backbone=True):
-    """Constructs a DeepLabV3 model with a ResNet-50 backbone.
-
-    Args:
-        num_classes (int): number of classes.
-        output_stride (int): output stride for deeplab.
-        pretrained_backbone (bool): If True, use the pretrained backbone.
-    """
-    return _load_model('deeplabv3plus', 'resnet50', num_classes, output_stride=output_stride, pretrained_backbone=pretrained_backbone)
+    return SMP.DeepLabV3Plus(encoder_name='resnet101', encoder_depth=encoder_depth, encoder_weights=encoder_weights, encoder_output_stride=encoder_output_stride, 
+                                decoder_channels=decoder_channels, decoder_atrous_rates=decoder_atrous_rates, in_channels=in_channels, classes=classes, 
+                                activation=activation, upsampling=upsampling, aux_params=aux_params)
 
 
-def deeplabv3plus_resnet101(channel=1, num_classes=21, output_stride=8, pretrained_backbone=True):
-    """Constructs a DeepLabV3+ model with a ResNet-101 backbone.
+if __name__ == "__main__":
+    import torch
+    from modelsummary import summary
 
-    Args:
-        num_classes (int): number of classes.
-        output_stride (int): output stride for deeplab.
-        pretrained_backbone (bool): If True, use the pretrained backbone.
-    """
-    return _load_model('deeplabv3plus', 'resnet101', num_classes, output_stride=output_stride, pretrained_backbone=pretrained_backbone)
+    model = deeplabv3plus_resnet50(encoder_name='resnet50', encoder_depth=5, encoder_weights='imagenet', encoder_output_stride=16,
+                                    decoder_channels=256, decoder_atrous_rates=(12 , 24, 36), in_channels=3, classes=2,
+                                    activation=None, upsampling=4, aux_params=None)
+
+    print('model output shape:', model(torch.rand(5, 3, 256, 256)).shape)
+    print(summary(model, (3, 256, 256), device='cpu'))
