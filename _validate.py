@@ -3,8 +3,8 @@ import torch.nn as nn
 import criterion
 
 def validate(model, loader, devices, metrics, loss_type,**kwargs):
-
-    costfunction = criterion.get_criterion.__dict__[loss_type](kwargs)
+    
+    costfunction = criterion.get_criterion.__dict__[loss_type](**kwargs)
 
     model.eval()
     metrics.reset()

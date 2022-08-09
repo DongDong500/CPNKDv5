@@ -83,9 +83,9 @@ def _get_argparser():
                         help=' One of None (random initialization), “imagenet” (pre-training on ImageNet) and other pretrained weights')
     parser.add_argument("--encoder_output_stride", type=int, default=16,
                         help='Downsampling factor for last encoder features')
-    parser.add_argument("--decoder_atrous_rates", type=int, default=256,
+    parser.add_argument("--decoder_atrous_rates", type=int, default=(12, 24, 36),
                         help='Dilation rates for ASPP module')
-    parser.add_argument("--decoder_channels", type=tuple, default=(12, 24, 36),
+    parser.add_argument("--decoder_channels", type=tuple, default=256,
                         help='A number of convolution filters in ASPP module')
     parser.add_argument("--in_channels", type=int, default=3,
                         help='A number of input channels for the model, default is 3 (RGB images)')
@@ -108,7 +108,9 @@ def _get_argparser():
                         help="number of workers (default: 8)")
     parser.add_argument("--tvs", type=int, default=20,
                         help="The number of blocks where train set to be split (default: 20)")
-    
+    parser.add_argument("--pseudo_lbl_ratio", type=float, default=0.5,
+                        help="ratio of pseudo label (default: 0.5)")
+
     # Transformation & Augmentation options
     parser.add_argument("--resize", default=(496, 468))
     parser.add_argument("--is_resize", action='store_false',
@@ -164,12 +166,12 @@ def _get_argparser():
                         help='momentum (default: 0.9)')
     parser.add_argument("--optim", type=str, default='SGD',
                         help="optimizer (default: SGD)")
-    parser.add_argument("--loss_type", type=str, default='kd_loss',
+    parser.add_argument("--loss_type", type=str, default='entropydice_loss',
                         help="criterion (default: kd loss alpha=0 for ce+dl)")
     parser.add_argument("--batch_size", type=int, default=32,
                         help='batch size (default: 32)')
-    parser.add_argument("--exp_itr", type=int, default=2,
-                        help='repeat N-identical experiments (default: 2)')    
+    parser.add_argument("--exp_itr", type=int, default=20,
+                        help='repeat N-identical experiments (default: 20)')    
     # Knowledge distillation
     parser.add_argument("--alpha", type=float, default=0,
                         help="alpha for KD loss (default: 0)")
@@ -237,7 +239,7 @@ def get_argparser(verbose=False):
         os.mkdir(parser.best_ckpt)
         
     return parser
-   
+
 def save_argparser(parser, save_dir) -> dict:
 
     jsummary = {}

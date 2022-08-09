@@ -6,6 +6,8 @@ from random import sample
 from .cpn import CPN
 from .pmn import PMN
 from .median import Median
+from .medianpad import Medianpad
+from .medianpadw import Medianpadw
 from .pgn import PGN
 from .pgmn import PGMN
 from .pgpn import PGPN
@@ -15,6 +17,8 @@ from .cpn_trim import CPNtrim
 from .cpn_grc_trim_test import CPNwithTrimTest
 from .pmpn import PMPN
 from .cpnBypppn import _PPPN
+from .cpnpad import CPNpad
+from .cpnpadw import CPNpadw
 from utils.ext_transforms import ExtCompose
 
 def mktv(root:str = '/', datatype:str = 'CPN', dver:str = 'splits', tvs:int = 5):
@@ -161,6 +165,36 @@ def median(root:str = '/', datatype:str = 'Median', dver:str = 'splits',
 
     return Median(root, 'Median', dver, image_set, transform, is_rgb)
 
+def medianpad(root:str = '/', datatype:str = 'Median_pad', dver:str = 'splits',
+            image_set:str = 'train', transform:ExtCompose = None, is_rgb:bool = True, tvs:int = 5,
+            **kwargs):
+    
+    """ -Median nerve
+        1044 + 261 = 1305 samples
+        size: (896, 640) 501 samples or (640, 640) 802 samples
+    """
+    if tvs < 2:
+        raise Exception("tvs must be larger than 1")
+    elif image_set == 'train':
+        mktv(root, 'Median_pad', 'splits',tvs)
+
+    return Medianpad(root, 'Median_pad', dver, image_set, transform, is_rgb)
+
+def medianpadw(root:str = '/', datatype:str = 'Median_pad', dver:str = 'splits',
+            image_set:str = 'train', transform:ExtCompose = None, is_rgb:bool = True, tvs:int = 5,
+            **kwargs):
+    
+    """ -Median nerve
+        1044 + 261 = 1305 samples
+        size: (896, 640) 501 samples or (640, 640) 802 samples
+    """
+    if tvs < 2:
+        raise Exception("tvs must be larger than 1")
+    elif image_set == 'train':
+        mktv(root, 'Median_padw', 'splits',tvs)
+
+    return Medianpadw(root, 'Median_padw', dver, image_set, transform, is_rgb)
+
 def pgn(root:str = '/', datatype:str = 'PGN', dver:str = 'splits',
             image_set:str = 'train', transform:ExtCompose = None, is_rgb:bool = True, tvs:int = 5,
             **kwargs):
@@ -266,6 +300,36 @@ def cpnbypppn(root:str = '/', datatype:str = 'PPPN', dver:str = 'splits',
         mktv(root, 'CPN_all', dver, tvs)
 
     return _PPPN(root, 'CPN_all', dver, image_set, transform, is_rgb)
+
+def cpnpad(root:str = '/', datatype:str = 'CPN', dver:str = 'splits',
+            image_set:str = 'train', transform:ExtCompose = None, is_rgb:bool = True, tvs:int = 5,
+            **kwargs):
+    
+    """ -Peroneal nerve (all parts: fiber head (FH), fibular neuropathy (FN+0 ~ 15), POP+0 ~ 5)
+        490 samples
+        with 0 padding (640, 640)
+    """
+    if tvs < 2:
+        raise Exception("tvs must be larger than 1")
+    elif image_set == 'train':
+        mktv(root, 'CPN_pad', dver, tvs)
+
+    return CPNpad(root, 'CPN_pad', dver, image_set, transform, is_rgb)
+
+def cpnpadw(root:str = '/', datatype:str = 'CPN', dver:str = 'splits',
+            image_set:str = 'train', transform:ExtCompose = None, is_rgb:bool = True, tvs:int = 5,
+            **kwargs):
+    
+    """ -Peroneal nerve (all parts: fiber head (FH), fibular neuropathy (FN+0 ~ 15), POP+0 ~ 5)
+        490 samples
+        with 255 padding (640, 640)
+    """
+    if tvs < 2:
+        raise Exception("tvs must be larger than 1")
+    elif image_set == 'train':
+        mktv(root, 'CPN_pad_255', dver, tvs)
+
+    return CPNpadw(root, 'CPN_pad_255', dver, image_set, transform, is_rgb)
 
 
 

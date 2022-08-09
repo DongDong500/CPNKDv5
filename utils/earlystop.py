@@ -25,50 +25,39 @@ class EarlyStopping:
         self.patience = patience
         self.verbose = verbose
         self.counter = 0
-        self.best_score = None
+        self.best_score = np.Inf
         self.early_stop = False
-        self.val_loss_min = np.Inf
         self.delta = delta
         self.path = path
-        self.save_model = save_model
 
     def __call__(self, val_loss, model, optim, scheduler, cur_itrs):
 
-        score = -val_loss
+        score = val_loss
 
-        if self.best_score is None:
+        if self.best_score is np.Inf:
+            self.save_checkpoint(score, model, optim, scheduler, cur_itrs)
             self.best_score = score
-            self.save_checkpoint(val_loss, model, optim, scheduler, cur_itrs)
             return True
-        elif score < self.best_score + self.delta:
+        elif score > self.best_score - self.delta:
             self.counter += 1
             print(f'EarlyStopping counter: {self.counter} out of {self.patience}')
             if self.counter >= self.patience:
                 self.early_stop = True
             return False
         else:
+            self.save_checkpoint(score, model, optim, scheduler, cur_itrs)
             self.best_score = score
-            self.save_checkpoint(val_loss, model, optim, scheduler, cur_itrs)
             self.counter = 0
             return True
 
     def save_checkpoint(self, val_loss, model, optim, scheduler, cur_itrs):
         '''validation loss가 감소하면 모델을 저장한다.'''
         if self.verbose:
-            print(f'Validation loss decreased ({self.val_loss_min:.4f} --> {val_loss:.4f})')
-        if self.save_model:
-            torch.save({
-                'model_state' : model.state_dict(),
-                'optimizer_state' : optim.state_dict(),
-                'scheduler_state' : scheduler.state_dict(),
-                'cur_itrs' : cur_itrs,
-            }, os.path.join(self.path, 'checkpoint.pt'))
-        else:
-            torch.save({
-                'model_state' : model.state_dict(),
-                'optimizer_state' : optim.state_dict(),
-                'scheduler_state' : scheduler.state_dict(),
-                'cur_itrs' : cur_itrs,
-            }, os.path.join(self.path, 'checkpoint.pt'))
-
-        self.val_loss_min = val_loss
+            print(f'Validation loss decreased ({self.best_score:.4f} --> {val_loss:.4f})')
+        
+        torch.save({
+            'model_state' : model.state_dict(),
+            'optimizer_state' : optim.state_dict(),
+            'scheduler_state' : scheduler.state_dict(),
+            'cur_itrs' : cur_itrs,
+        }, os.path.join(self.path, 'checkpoint.pt'))

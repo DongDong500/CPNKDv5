@@ -95,15 +95,36 @@ if __name__ == '__main__':
     from args_mono import get_argparser, save_argparser
 
     total_time = datetime.now()
-
+    ''' gaussian prior random crop size (360, 360) from (640, 640) 
+        test with 1/2 scaled (360, 360) 
+    '''
     try:
         is_error = False
         #size=(256, 256), normal_h=(21.08, 8.13), normal_w=(44.22, 12.01), block_size=5
-        short_memo = ['cpn uniform random crop test with trimmed dataset base study n=20']
+        short_memo = ['03 cpn padw/ train/ (640, 640) GPR crop (320, 320) > test/ (640, 640) GPR crop (320, 320) base study n=20']
         for i in range(len(short_memo)):
             opts = get_argparser()
             opts.short_memo = short_memo[i]
+
+            opts.gaussian_crop = True
+            opts.gaussian_crop_H = (21.08, 8.13)
+            opts.gaussian_crop_W = (44.22, 12.01)
+            opts.gaussian_crop_block_size = 5
+
+            opts.crop_size = (320, 320)
+            opts.crop_size_val = (320, 320)
+            opts.crop_size_test = (320, 320)
+
+            opts.dataset = 'cpnpadw'
+
+            opts.is_resize = False
+            opts.is_resize_val = False
+            opts.is_resize_test = False
+            opts.scale_factor = 1.0
+            opts.scale_factor_val = 1.0
+            opts.scale_factor_test = 1.0
             
+
             exp(opts)
         
     except KeyboardInterrupt:

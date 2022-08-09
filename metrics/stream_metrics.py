@@ -4,31 +4,30 @@ from sklearn.metrics import confusion_matrix
 class _StreamMetrics(object):
     def __init__(self):
         """ Overridden by subclasses """
-        raise NotImplementedError()
 
     def update(self, gt, pred):
         """ Overridden by subclasses """
-        raise NotImplementedError()
 
     def get_results(self):
         """ Overridden by subclasses """
-        raise NotImplementedError()
 
     def to_str(self, metrics):
         """ Overridden by subclasses """
-        raise NotImplementedError()
 
     def reset(self):
-        """ Overridden by subclasses """
-        raise NotImplementedError()      
+        """ Overridden by subclasses """    
 
 class StreamSegMetrics(_StreamMetrics):
     """
     Stream Metrics for Semantic Segmentation Task
     """
     def __init__(self, n_classes):
+        super(StreamSegMetrics, self).__init__()
         self.n_classes = n_classes
         self.confusion_matrix = np.zeros((n_classes, n_classes))
+
+    def reset(self):
+        self.confusion_matrix = np.zeros((self.n_classes, self.n_classes))
 
     def update(self, label_trues, label_preds):
         for lt, lp in zip(label_trues, label_preds):
@@ -87,9 +86,6 @@ class StreamSegMetrics(_StreamMetrics):
                 "Class IoU": cls_iu,
                 "Class F1": cls_f1
             }
-        
-    def reset(self):
-        self.confusion_matrix = np.zeros((self.n_classes, self.n_classes))
 
 class AverageMeter(object):
     """Computes average values"""

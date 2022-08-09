@@ -22,7 +22,7 @@ def get_class_weight(lbls):
 def train(model, loader, devices, metrics, loss_type, 
             optimizer, scheduler, **kwargs):
     
-    costfunction = criterion.get_criterion.__dict__[loss_type](kwargs)
+    costfunction = criterion.get_criterion.__dict__[loss_type](**kwargs)
 
     model.train()
     metrics.reset()
