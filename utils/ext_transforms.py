@@ -126,9 +126,10 @@ class ExtScale(object):
             ``PIL.Image.BILINEAR``
     """
 
-    def __init__(self, scale, interpolation=F.InterpolationMode.BILINEAR):
+    def __init__(self, scale, is_scale, interpolation=F.InterpolationMode.BILINEAR):
         self.scale = scale
         self.interpolation = interpolation
+        self.is_scale = is_scale
 
     def __call__(self, img, lbl):
         """
@@ -140,8 +141,11 @@ class ExtScale(object):
             PIL Image: Rescaled label.
         """
         assert img.size == lbl.size
-        target_size = ( int(img.size[1]*self.scale), int(img.size[0]*self.scale) ) # (H, W)
-        return F.resize(img, target_size, self.interpolation), F.resize(lbl, target_size, F.InterpolationMode.BILINEAR)
+        if self.is_scale:
+            target_size = ( int(img.size[1]*self.scale), int(img.size[0]*self.scale) ) # (H, W)
+            return F.resize(img, target_size, self.interpolation), F.resize(lbl, target_size, F.InterpolationMode.BILINEAR)
+        else:
+            return img, lbl
 
     def __repr__(self):
         interpolate_str = _pil_interpolation_to_str[self.interpolation]
@@ -347,13 +351,14 @@ class ExtRandomCrop(object):
             desired size to avoid raising an exception.
     """
 
-    def __init__(self, size, padding=0, pad_if_needed=False):
+    def __init__(self, size, is_crop, padding=0, pad_if_needed=False):
         if isinstance(size, numbers.Number):
             self.size = (int(size), int(size))
         else:
             self.size = size
         self.padding = padding
         self.pad_if_needed = pad_if_needed
+        self.is_crop = is_crop
 
     @staticmethod
     def get_params(img, output_size):
@@ -383,23 +388,27 @@ class ExtRandomCrop(object):
             PIL Image: Cropped label.
         """
         assert img.size == lbl.size, 'size of img and lbl should be the same. %s, %s'%(img.size, lbl.size)
-        if self.padding > 0:
-            img = F.pad(img, self.padding)
-            lbl = F.pad(lbl, self.padding)
+        
+        if self.is_crop:
+            if self.padding > 0:
+                img = F.pad(img, self.padding)
+                lbl = F.pad(lbl, self.padding)
 
-        # pad the width if needed
-        if self.pad_if_needed and img.size[0] < self.size[1]:
-            img = F.pad(img, padding=int((1 + self.size[1] - img.size[0]) / 2))
-            lbl = F.pad(lbl, padding=int((1 + self.size[1] - lbl.size[0]) / 2))
+            # pad the width if needed
+            if self.pad_if_needed and img.size[0] < self.size[1]:
+                img = F.pad(img, padding=int((1 + self.size[1] - img.size[0]) / 2))
+                lbl = F.pad(lbl, padding=int((1 + self.size[1] - lbl.size[0]) / 2))
 
-        # pad the height if needed
-        if self.pad_if_needed and img.size[1] < self.size[0]:
-            img = F.pad(img, padding=int((1 + self.size[0] - img.size[1]) / 2))
-            lbl = F.pad(lbl, padding=int((1 + self.size[0] - lbl.size[1]) / 2))
+            # pad the height if needed
+            if self.pad_if_needed and img.size[1] < self.size[0]:
+                img = F.pad(img, padding=int((1 + self.size[0] - img.size[1]) / 2))
+                lbl = F.pad(lbl, padding=int((1 + self.size[0] - lbl.size[1]) / 2))
 
-        i, j, h, w = self.get_params(img, self.size)
+            i, j, h, w = self.get_params(img, self.size)
 
-        return F.crop(img, i, j, h, w), F.crop(lbl, i, j, h, w)
+            return F.crop(img, i, j, h, w), F.crop(lbl, i, j, h, w)
+        else:
+            return img, lbl
 
     def __repr__(self):
         return self.__class__.__name__ + '(size={0}, padding={1})'.format(self.size, self.padding)

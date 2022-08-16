@@ -4,6 +4,7 @@ import math
 from random import sample
 #sys.path.append(os.path.dirname( os.path.dirname( os.path.abspath(__file__) ) ))
 from .cpn import CPN
+from .cpn_vit import CPNvit
 from .pmn import PMN
 from .median import Median
 from .medianpad import Medianpad
@@ -21,7 +22,7 @@ from .cpnpad import CPNpad
 from .cpnpadw import CPNpadw
 from utils.ext_transforms import ExtCompose
 
-def mktv(root:str = '/', datatype:str = 'CPN', dver:str = 'splits', tvs:int = 5):
+def mktv(root:str = '/', datatype:str = 'CPN', dver:str = 'splits/v5/3', tvs:int = 5):
     split_f = os.path.join(root, datatype, dver, '_train.txt')
 
     if not os.path.exists(split_f):
@@ -42,14 +43,12 @@ def mktv(root:str = '/', datatype:str = 'CPN', dver:str = 'splits', tvs:int = 5)
         for w in val:
             f.write(f'{w}\n')
     
-
-def cpn(root:str = '/', datatype:str = 'CPN', dver:str = 'splits',
+def cpn(root:str = '/', datatype:str = 'CPN', dver:str = 'splits/v5/3',
             image_set:str = 'train', transform:ExtCompose = None, is_rgb:bool = True, tvs:int = 5,
             **kwargs):
     
     """ -Peroneal nerve (all parts: fiber head (FH), fibular neuropathy (FN+0 ~ 15), POP+0 ~ 5)
         490 samples
-    
     Args:
         root (str)  :   path to data parent directory (Ex: /data1/sdi/datasets) 
         datatype (str)  :   data folder name (default: CPN_all)
@@ -64,9 +63,41 @@ def cpn(root:str = '/', datatype:str = 'CPN', dver:str = 'splits',
     if tvs < 2:
         raise Exception("tvs must be larger than 1")
     elif image_set == 'train':
-        mktv(root, 'CPN_all', dver, tvs)
+        mktv(root, 'CPN', dver, tvs)
 
-    return CPN(root, 'CPN_all', dver, image_set, transform, is_rgb)
+    return CPN(root, 'CPN' ,dver, image_set, transform, is_rgb)
+
+def median(root:str = '/', datatype:str = 'Median', dver:str = 'splits',
+            image_set:str = 'train', transform:ExtCompose = None, is_rgb:bool = True, tvs:int = 5,
+            **kwargs):
+    
+    """ - Median nerve:     1305 samples (1044 + 261)
+    """
+    if tvs < 2:
+        raise Exception("tvs must be larger than 1")
+    elif image_set == 'train':
+        mktv(root, 'Median', 'splits', tvs)
+
+    return Median(root, 'Median', dver, image_set, transform, is_rgb)
+
+def pmn(root:str = '/', datatype:str = 'PMN', dver:str = 'splits',
+            image_set:str = 'train', transform:ExtCompose = None, is_rgb:bool = True, tvs:int = 5,
+            **kwargs):
+    
+    """ ```in batch training``` 
+
+        - Peroneal nerve:   490 samples
+        - Median nerve:     1305 samples
+    """
+    if tvs < 2:
+        raise Exception("tvs must be larger than 1")
+    elif image_set == 'train':
+        mktv(root, 'CPN', dver, tvs)
+        mktv(root, 'Median', 'splits',tvs)
+
+    return PMN(root, 'CPN', dver, image_set, transform, is_rgb)
+
+
 
 def cpnpseudo(root:str = '/', datatype:str = 'CPN', dver:str = 'splits',
                 image_set:str = 'train', transform:ExtCompose = None, is_rgb:bool = True, tvs:int = 5,
@@ -111,59 +142,6 @@ def cpnwithtrimtest(root:str = '/', datatype:str = 'CPN', dver:str = 'splits',
         mktv(root, 'CPN_all', dver, tvs)
 
     return CPNwithTrimTest(root, 'CPN_all', dver, image_set, transform, is_rgb)
-
-def pmn(root:str = '/', datatype:str = 'PMN', dver:str = 'splits',
-            image_set:str = 'train', transform:ExtCompose = None, is_rgb:bool = True, tvs:int = 5,
-            **kwargs):
-    
-    """ -Peroneal nerve (all parts: fiber head (FH), fibular neuropathy (FN+0 ~ 15), POP+0 ~ 5)
-        490 samples
-        -Median nerve
-        1044 + 261 = 1305 samples
-    
-    Args:
-        root (str)  :   path to data parent directory (Ex: /data1/sdi/datasets) 
-        datatype (str)  :   data folder name (default: CPN_all)
-        dver (str)  : version of dataset (default: splits)
-        image_set (str) :    train/val or test (default: train)
-        transform (ExtCompose)  :   composition of transform class
-        is_rgb (bool)   :  True for RGB, False for gray scale images
-        tvs (int)   :  train/validate dataset ratio 
-                2 block = 1 mini-block train set, 1 mini-block validate set
-                5 block = 4 mini-block train set, 1 mini-block validate set
-    """
-    if tvs < 2:
-        raise Exception("tvs must be larger than 1")
-    elif image_set == 'train':
-        mktv(root, 'CPN_all', dver, tvs)
-        mktv(root, 'Median', 'splits',tvs)
-
-    return PMN(root, 'CPN_all', dver, image_set, transform, is_rgb)
-
-def median(root:str = '/', datatype:str = 'Median', dver:str = 'splits',
-            image_set:str = 'train', transform:ExtCompose = None, is_rgb:bool = True, tvs:int = 5,
-            **kwargs):
-    
-    """ -Median nerve
-        1044 + 261 = 1305 samples
-    
-    Args:
-        root (str)  :   path to data parent directory (Ex: /data1/sdi/datasets) 
-        datatype (str)  :   data folder name (default: Median)
-        dver (str)  : version of dataset (default: splits)
-        image_set (str) :    train/val or test (default: train)
-        transform (ExtCompose)  :   composition of transform class
-        is_rgb (bool)   :  True for RGB, False for gray scale images
-        tvs (int)   :  train/validate dataset ratio 
-                2 block = 1 mini-block train set, 1 mini-block validate set
-                5 block = 4 mini-block train set, 1 mini-block validate set
-    """
-    if tvs < 2:
-        raise Exception("tvs must be larger than 1")
-    elif image_set == 'train':
-        mktv(root, 'Median', 'splits',tvs)
-
-    return Median(root, 'Median', dver, image_set, transform, is_rgb)
 
 def medianpad(root:str = '/', datatype:str = 'Median_pad', dver:str = 'splits',
             image_set:str = 'train', transform:ExtCompose = None, is_rgb:bool = True, tvs:int = 5,

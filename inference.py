@@ -40,9 +40,9 @@ def get_parser(verbose=True):
     if not os.path.exists(args.pth):
         raise Exception (f'pth not exists: {args.pth}')
 
-    pram = utils.Params(args.pth)  
+    pram = utils.Params(args.pth)
     if verbose:
-        print(f'folder: {os.path.dirname(args.pth)}') 
+        print(f'folder: {os.path.dirname(args.pth)}')
 
     return pram, args.ver
 
@@ -54,7 +54,11 @@ def load_model(opts, ver='run_00', ckpt='dicecheckpoint.pt'):
                                                     encoder_weights=opts.encoder_weights, encoder_output_stride=opts.encoder_output_stride,
                                                     decoder_atrous_rates=opts.decoder_atrous_rates, decoder_channels=opts.decoder_channels,
                                                     activation=opts.activation, upsampling=opts.upsampling, aux_params=opts.aux_params)
-        ckpt = torch.load(os.path.join(opts.best_ckpt, ver, ckpt), map_location='cpu')
+        if ver.startswith('run'):  
+            ckpt = torch.load(os.path.join(opts.best_ckpt, ver, ckpt), map_location='cpu')
+        else:
+            ckpt = torch.load(os.path.join(opts.best_ckpt, ckpt), map_location='cpu')
+
         model.load_state_dict(ckpt["model_state"])
         print(f'Best epoch: { ckpt["cur_itrs"] }')
         del ckpt
@@ -68,22 +72,26 @@ def __get_dataset(opts):
     mean = [0.485, 0.456, 0.406]
     std = [0.229, 0.224, 0.225]
 
-    if opts.gaussian_crop:
+    if opts.is_gaussian_crop:
         transform = et.ExtCompose([
+            et.ExtResize(size=opts.resize_test, is_resize=opts.is_resize_test),
             et.ExtGaussianRandomCrop(size=opts.crop_size_test, 
                                         normal_h=opts.gaussian_crop_H, 
                                         normal_w=opts.gaussian_crop_W,
                                         block_size=opts.gaussian_crop_block_size),
+            et.ExtScale(scale=opts.scale_factor_test, is_scale=opts.is_scale_test),
             et.ExtToTensor(),
             et.ExtNormalize(mean=mean, std=std),
+            et.GaussianPerturb(mean=opts.mu_test, std=opts.std_test)
             ])
     else:
         transform = et.ExtCompose([
             et.ExtResize(size=opts.resize_test, is_resize=opts.is_resize_test),
-            et.ExtRandomCrop(size=opts.crop_size_test, pad_if_needed=True),
-            et.ExtScale(scale=opts.scale_factor_test),
+            et.ExtRandomCrop(size=opts.crop_size_test, is_crop=opts.is_crop_test, pad_if_needed=True),
+            et.ExtScale(scale=opts.scale_factor_test, is_scale=opts.is_scale_test),
             et.ExtToTensor(),
             et.ExtNormalize(mean=mean, std=std),
+            et.GaussianPerturb(mean=opts.mu_test, std=opts.std_test)
             ])
 
     dst = dt.getdata.__dict__[opts.dataset](root=opts.data_root, 

@@ -1,9 +1,10 @@
 import os
 import sys
+import numpy as np
 import torch.utils.data as data
 from PIL import Image
 
-class PMN(data.Dataset):
+class CPNvit(data.Dataset):
     """
     Args:6
         root (string): Root directory of the VOC Dataset.
@@ -13,6 +14,16 @@ class PMN(data.Dataset):
             and returns a transformed version. E.g, ``transforms.RandomCrop``
         dver (str): version of dataset (ex) ``splits/v5/3``
     """
+    def get_lbl(self, target, image_size=16):
+        mask = np.array(target, dtype=np.uint8)
+        h, w = np.where(mask > 0)
+        tl = (h.min(), w.min())
+        rb = (h.max(), w.max())
+        pnt = ( int((tl[0] + rb[0])/2), int((tl[1] + rb[1])/2) )
+        clsn = 32 * ((pnt[0] // 16) + 1) + ((pnt[1] // 16) + 1)
+
+        return clsn
+
     def _read(self, index):
         """
         Args:
@@ -32,44 +43,39 @@ class PMN(data.Dataset):
             img = Image.open(self.images[index]).convert('L')
             target = Image.open(self.masks[index]).convert('L')            
 
+        assert( img.size == target.size == (512, 512) )
+
+        target = self.get_lbl(target)
+
         return img, target
 
     def __init__(self, root, datatype='CPN', dver='splits', 
                     image_set='train', transform=None, is_rgb=True):
 
+        self.root = root
+        self.datatype = datatype
+        self.dver = dver
+        self.image_set = image_set
         self.transform = transform
         self.is_rgb = is_rgb
 
-        image_dir = os.path.join(root, 'CPN', 'Images')
-        mask_dir = os.path.join(root, 'CPN', 'Masks')
-        median_image_dir = os.path.join(root, 'Median', 'Images')
-        median_mask_dir = os.path.join(root, 'Median', 'Masks')
-
-        split_f = os.path.join(root, 'CPN', dver, image_set.rstrip('\n') + '.txt')
-        m_split_f = os.path.join(root, 'Median/splits', image_set.rstrip('\n') + '.txt')
-
+        image_dir = os.path.join(self.root, self.datatype, 'Images')
+        mask_dir = os.path.join(self.root, self.datatype, 'Masks')
+        split_f = os.path.join(self.root, self.datatype, self.dver, self.image_set.rstrip('\n') + '.txt')
+        
         if not os.path.exists(image_dir) or not os.path.exists(mask_dir):
             raise Exception('Dataset not found or corrupted.')
-        
-        if not os.path.exists(median_image_dir) or not os.path.exists(median_mask_dir):
-            raise Exception('Dataset not found or corrupted.')        
-       
-        if not os.path.exists(split_f) or not os.path.exists(m_split_f):
-            raise Exception('Wrong image_set entered!', split_f, m_split_f)
+    
+        if not os.path.exists(split_f):
+            raise Exception('Wrong image_set entered!' 
+                            'Please use image_set="train" or image_set="val"\n', split_f)
 
         with open(os.path.join(split_f), "r") as f:
             file_names = [x.strip() for x in f.readlines()]
-        
-        with open(os.path.join(m_split_f), "r") as f:
-            m_file_names = [x.strip() for x in f.readlines()]
 
         self.images = [os.path.join(image_dir, x + ".jpg") for x in file_names]
         self.masks = [os.path.join(mask_dir, x + ".jpg") for x in file_names]
         
-        if image_set == 'train' or image_set == 'val':
-            self.images.extend([os.path.join(median_image_dir, x + ".jpg") for x in m_file_names])
-            self.masks.extend([os.path.join(median_mask_dir, x + ".jpg") for x in m_file_names])
-
         assert (len(self.images) == len(self.masks))
 
         self.image = []
@@ -79,18 +85,18 @@ class PMN(data.Dataset):
             self.image.append(img)
             self.mask.append(tar)
 
-    def __len__(self):
-        return len(self.images)
-
     def __getitem__(self, index):
 
         img = self.image[index]
         target = self.mask[index]
         
         if self.transform is not None:
-            img, target = self.transform(img, target)
+            img, _ = self.transform(img, img)
         
         return img, target
+
+    def __len__(self):
+        return len(self.images)
 
 
 if __name__ == "__main__":
@@ -103,21 +109,22 @@ if __name__ == "__main__":
 
     transform = et.ExtCompose([
             et.ExtRandomCrop(size=(512, 512), is_crop=True, pad_if_needed=True),
-            et.ExtScale(scale=0.5, is_scale=True),
+            #et.ExtScale(scale=0.5, is_scale=True),
             et.ExtToTensor(),
             et.ExtNormalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
             ])
     
-    dst = PMN(root='/data1/sdi/datasets', datatype='pmn', image_set='train',
+    image_set_type = ['train', 'val', 'test']
+    for ist in image_set_type:
+        dst = CPNvit(root='/data1/sdi/datasets', datatype='CPN', image_set=ist,
                     transform=transform, is_rgb=True, dver='splits/v5/3')
-    train_loader = DataLoader(dst, batch_size=16,
+        loader = DataLoader(dst, batch_size=16,
                                 shuffle=True, num_workers=2, drop_last=True)
-    print(f'dataset len(dst) = {len(dst)}')
-    for i, (ims, lbls) in tqdm(enumerate(train_loader)):
-        print('ims shape:', ims.shape)
-        print('lbls shape:', lbls.shape)
-        print('roi nerve (%):', lbls.numpy().sum()/(lbls.shape[0] * lbls.shape[1] * lbls.shape[2]))
-        print('roi background (%):', (1 - lbls.numpy().sum()/(lbls.shape[0] * lbls.shape[1] * lbls.shape[2])))
-        if i > 1:
+        print(f'len [{ist}]: {len(dst)}')
+
+        for i, (ims, lbls) in tqdm(enumerate(loader)):
+            print(lbls)
             break
-    
+            pass
+        
+        print('Clear !!!')

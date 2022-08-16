@@ -100,9 +100,9 @@ if __name__ == '__main__':
     '''
     try:
         is_error = False
-        # abort
+        # exp-4
         #size=(256, 256), normal_h=(21.08, 8.13), normal_w=(44.22, 12.01), block_size=5
-        short_memo = ['04 cpn padw/ train/ (640, 640) GPR crop (320, 320) > test/ (640, 640) 0.5 scale (320, 320) base study n=20']
+        short_memo = ['05 cpn padw/ train/ (640, 640) GPR crop (320, 320) > test/ (640, 640) GPR crop (512, 512) base study n=20']
         for i in range(len(short_memo)):
             opts = get_argparser()
             opts.short_memo = short_memo[i]
@@ -114,7 +114,7 @@ if __name__ == '__main__':
 
             opts.crop_size = (320, 320)
             opts.crop_size_val = (320, 320)
-            opts.crop_size_test = (320, 320)
+            opts.crop_size_test = (512, 512)
 
             opts.dataset = 'cpnpadw'
 
@@ -123,7 +123,7 @@ if __name__ == '__main__':
             opts.is_resize_test = False
             opts.scale_factor = 1.0
             opts.scale_factor_val = 1.0
-            opts.scale_factor_test = 0.5
+            opts.scale_factor_test = 1.0
 
             exp(opts)
         

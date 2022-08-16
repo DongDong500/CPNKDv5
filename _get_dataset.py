@@ -7,57 +7,65 @@ def get_dataset(opts, dataset, dver):
     mean = [0.485, 0.456, 0.406] if (opts.in_channels == 3) else [0.485]
     std = [0.229, 0.224, 0.225] if (opts.in_channels == 3) else [0.229]
 
-    if opts.gaussian_crop:
+    if opts.is_gaussian_crop:
         train_transform = et.ExtCompose([
+            et.ExtResize(size=opts.resize, is_resize=opts.is_resize),
             et.ExtGaussianRandomCrop(size=opts.crop_size, 
                                         normal_h=opts.gaussian_crop_H, 
                                         normal_w=opts.gaussian_crop_W,
                                         block_size=opts.gaussian_crop_block_size),
+            et.ExtScale(scale=opts.scale_factor, is_scale=opts.is_scale),
             et.ExtRandomVerticalFlip(),
             et.ExtToTensor(),
             et.ExtNormalize(mean=mean, std=std),
             ])
         val_transform = et.ExtCompose([
+            et.ExtResize(size=opts.resize_val, is_resize=opts.is_resize_val),
             et.ExtGaussianRandomCrop(size=opts.crop_size_val, 
                                         normal_h=opts.gaussian_crop_H, 
                                         normal_w=opts.gaussian_crop_W,
                                         block_size=opts.gaussian_crop_block_size),
+            et.ExtScale(scale=opts.scale_factor_val, is_scale=opts.is_scale_val),
             et.ExtToTensor(),
             et.ExtNormalize(mean=mean, std=std),
             ])
         test_transform = et.ExtCompose([
-            # et.ExtGaussianRandomCrop(size=opts.crop_size_test, 
-            #                             normal_h=opts.gaussian_crop_H, 
-            #                             normal_w=opts.gaussian_crop_W,
-            #                             block_size=opts.gaussian_crop_block_size),
-            et.ExtScale(scale=opts.scale_factor_test),
+            et.ExtResize(size=opts.resize_test, is_resize=opts.is_resize_test),
+            et.ExtGaussianRandomCrop(size=opts.crop_size_test, 
+                                        normal_h=opts.gaussian_crop_H, 
+                                        normal_w=opts.gaussian_crop_W,
+                                        block_size=opts.gaussian_crop_block_size),
+            et.ExtScale(scale=opts.scale_factor_test, is_scale=opts.is_scale_test),
             et.ExtToTensor(),
             et.ExtNormalize(mean=mean, std=std),
+            et.GaussianPerturb(mean=opts.mu_test, std=opts.std_test)
             ])
     else:
         train_transform = et.ExtCompose([
             et.ExtResize(size=opts.resize, is_resize=opts.is_resize),
-            et.ExtRandomCrop(size=opts.crop_size, pad_if_needed=True),
-            et.ExtScale(scale=opts.scale_factor),
+            et.ExtRandomCrop(size=opts.crop_size, is_crop=opts.is_crop, pad_if_needed=True),
+            et.ExtScale(scale=opts.scale_factor, is_scale=opts.is_scale),
             et.ExtRandomVerticalFlip(),
+            et.ExtRandomHorizontalFlip(),
             et.ExtToTensor(),
             et.ExtNormalize(mean=mean, std=std),
             et.GaussianPerturb(mean=opts.mu, std=opts.std)
             ])
         val_transform = et.ExtCompose([
             et.ExtResize(size=opts.resize_val, is_resize=opts.is_resize_val),
-            et.ExtRandomCrop(size=opts.crop_size_val, pad_if_needed=True),
-            et.ExtScale(scale=opts.scale_factor_val),
+            et.ExtRandomCrop(size=opts.crop_size_val, is_crop=opts.is_crop_val, pad_if_needed=True),
+            et.ExtScale(scale=opts.scale_factor_val, is_scale=opts.is_scale_val),
             et.ExtToTensor(),
             et.ExtNormalize(mean=mean, std=std),
             et.GaussianPerturb(mean=opts.mu_val, std=opts.std_val)
             ])
         test_transform = et.ExtCompose([
             et.ExtResize(size=opts.resize_test, is_resize=opts.is_resize_test),
-            et.ExtRandomCrop(size=opts.crop_size_test, pad_if_needed=True),
-            et.ExtScale(scale=opts.scale_factor_test),
+            et.ExtRandomCrop(size=opts.crop_size_test, is_crop=opts.is_crop_test, pad_if_needed=True),
+            et.ExtScale(scale=opts.scale_factor_test, is_scale=opts.is_scale_test),
             et.ExtToTensor(),
             et.ExtNormalize(mean=mean, std=std),
+            et.GaussianPerturb(mean=opts.mu_test, std=opts.std_test)
             ])
 
     train_dst = dt.getdata.__dict__[dataset](root=opts.data_root, 

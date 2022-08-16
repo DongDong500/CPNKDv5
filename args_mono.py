@@ -112,31 +112,52 @@ def _get_argparser():
                         help="ratio of pseudo label (default: 0.5)")
 
     # Transformation & Augmentation options
-    parser.add_argument("--resize", default=(496, 468))
     parser.add_argument("--is_resize", action='store_false',
                         help="resize data (default: True)")
-    parser.add_argument("--resize_val", default=(496, 468))
     parser.add_argument("--is_resize_val", action='store_false',
                         help="resize validate data (default: True)")
-    parser.add_argument("--resize_test", default=(496, 468))
     parser.add_argument("--is_resize_test", action='store_false',
                         help="resize test data (default: True)")
-    parser.add_argument("--crop_size", default=(512, 448))
+    parser.add_argument("--resize", default=(496, 468))
+    parser.add_argument("--resize_val", default=(496, 468))
+    parser.add_argument("--resize_test", default=(496, 468))
+    
+    # Scale
+    parser.add_argument("--is_scale", action='store_false',
+                        help="scale data (default: True)")
+    parser.add_argument("--is_scale_val", action='store_false',
+                        help="scale data (default: True)")
+    parser.add_argument("--is_scale_test", action='store_false',
+                        help="scale data (default: True)")
+    parser.add_argument("--scale_factor", type=float, default=5e-1)
+    parser.add_argument("--scale_factor_val", type=float, default=5e-1)
+    parser.add_argument("--scale_factor_test", type=float, default=5e-1)
+
+    # Crop
+    parser.add_argument("--is_crop", action='store_false',
+                        help="crop data (default: True)")
+    parser.add_argument("--is_crop_val", action='store_false',
+                        help="crop data (default: True)")
+    parser.add_argument("--is_crop_test", action='store_false',
+                        help="crop data (default: True)")
+    parser.add_argument("--crop_size", default=(512, 448))    
     parser.add_argument("--crop_size_val", default=(512, 448))
     parser.add_argument("--crop_size_test", default=(512, 448))
-    parser.add_argument("--gaussian_crop", action='store_true')
+    
+    # Gaussian crop
+    parser.add_argument("--is_gaussian_crop", action='store_true')
     parser.add_argument("--gaussian_crop_H", default=(0.0 ,0.1),
                         help='gaussian base random crop H (mean, std)')
     parser.add_argument("--gaussian_crop_W", default=(0.0 ,0.1),
                         help='gaussian base random crop W (mean, std)')
     parser.add_argument("--gaussian_crop_block_size", type=int, default=5)
-    parser.add_argument("--scale_factor", type=float, default=5e-1)
-    parser.add_argument("--scale_factor_val", type=float, default=5e-1)
-    parser.add_argument("--scale_factor_test", type=float, default=5e-1)
+    
+    # Other options / Gaussian noise channel
     parser.add_argument("--c_std", type=float, default=0.0,
                         help="train sigma in gaussian noise channel (default: 0)")
     parser.add_argument("--c_mu", type=float, default=0.0,
                         help="train mean in gaussian noise channel (default: 0)")
+    # Gaussian perturbation
     parser.add_argument("--std", type=float, default=0.0,
                         help="train sigma in gaussian perturbation (default: 0)")
     parser.add_argument("--mu", type=float, default=0.0,
@@ -171,22 +192,26 @@ def _get_argparser():
     parser.add_argument("--batch_size", type=int, default=32,
                         help='batch size (default: 32)')
     parser.add_argument("--exp_itr", type=int, default=20,
-                        help='repeat N-identical experiments (default: 20)')    
+                        help='repeat N-identical experiments (default: 20)')
+
     # Knowledge distillation
     parser.add_argument("--alpha", type=float, default=0,
                         help="alpha for KD loss (default: 0)")
     parser.add_argument("--T", type=float, default=3,
                         help="temperature in KD loss (default: 3)")
+
     # Validate options
     parser.add_argument("--val_interval", type=int, default=1,
                         help="epoch interval for eval (default: 1)")
     parser.add_argument("--val_batch_size", type=int, default=4,
                         help='batch size for validate (default: 4)') 
+
     # Early stop options
     parser.add_argument("--patience", type=int, default=100,
                         help="Number of epochs with no improvement after which training will be stopped (default: 100)")
     parser.add_argument("--delta", type=float, default=0.001,
                         help="Minimum change in the monitored quantity to qualify as an improvement (default: 0.001)")
+    
     # Test options
     parser.add_argument("--test_interval", type=int, default=1,
                         help="epoch interval for test (default: 1)")
